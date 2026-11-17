@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Your saved favorite foods and recipes on Foodopedia.">
+  <title>Your Favorite Dishes | Foodopedia</title>
+  <script>
+    if (!sessionStorage.getItem('foodopedia_current_user')) {
+      window.location.href = 'auth.html';
+    }
+  </script>
+  <script type="module" src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .page-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      max-width: 1280px;
+      margin: 20px auto 10px;
+      color: var(--text-main);
+    }
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 60px;
+      color: var(--text-muted);
+      font-size: 14px;
+      border-top: 1px solid var(--border-light);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="main-nav">
+  <a href="index.html" class="logo" style="color: inherit; text-decoration: none;">FOODOPEDIA</a>
+
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="javascript:void(0)" id="download-data-btn" onclick="downloadUserData()" style="color:white; text-decoration:none; font-size:13px; font-weight:600; display:none; background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px;">Download Data</a>
+    <a href="javascript:void(0)" id="download-feedback-btn" onclick="downloadFeedbackData()" style="color:white; text-decoration:none; font-size:13px; font-weight:600; display:none; background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px;">Download Feedback</a>
+    <a href="account.html" class="account-circle" title="My Account">
+      <svg viewBox="0 0 24 24" width="22" height="22" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </a>
+    <a href="like.html" class="like-icon" title="Favorites">
+      ❤️
+      <span id="like-count">0</span>
+    </a>
+  </div>
+</nav>
+
+<div style="max-width: 1280px; margin: 0 auto;">
+  <a href="javascript:history.back()" class="back-btn" id="backBtn">← Back</a>
+</div>
+
+<h2 class="page-title">Your Favorite Dishes ❤️</h2>
+
+<div class="card-container" id="like-list"></div>
+
+<footer>
+  <p>© 2026 Foodopedia. Keep your favorite recipes at your fingertips.</p>
+</footer>
+
+<script src="js/data.js"></script>
+
+<script type="module">
+const container = document.getElementById("like-list");
+
+let likedItems = getLikedFoods();
+let likedFoods = [];
+
+foods.forEach(f => {
+  if (likedItems.includes(f.id)) {
+    likedFoods.push(f);
+  }
+  if (f.variations) {
+    f.variations.forEach(v => {
+      if (likedItems.includes(v.id)) {
+        likedFoods.push({ ...v, cuisine: f.cuisine });
+      }
+    });
+  }
+});
+
+if(likedFoods.length === 0){
+  container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted); font-size:16px;'>You haven't added any favorite dishes yet. <a href='index.html' style='color: var(--primary); font-weight:700;'>Explore dishes</a></p>";
+} else {
+  container.innerHTML = likedFoods.map(f => `
+    <div class="card">
+      <span 
+        class="like-btn liked"
+        onclick="removeFavorite(${f.id}, event)">
+        <svg viewBox="0 0 24 24" class="heart-icon liked">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+        </svg>
+      </span>
+
+      <div onclick="location.href='food.html?id=${f.id}'">
+        <img src="${getImagePath(f.images)}" alt="${f.name}" loading="lazy" decoding="async" onerror="this.src=window.getImagePath([])">
+        <h3>${f.name}</h3>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.removeFavorite = function(id, event) {
+  event.stopPropagation();
+  const card = event.currentTarget.closest('.card');
+  toggleLike(id, null, () => {
+    card.style.transition = 'all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)';
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.8)';
+    setTimeout(() => {
+      card.remove();
+      if (container.querySelectorAll('.card').length === 0) {
+        container.innerHTML = "<p style='grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted); font-size:16px;'>You haven't added any favorite dishes yet. <a href='index.html' style='color: var(--primary); font-weight:700;'>Explore dishes</a></p>";
+      }
+    }, 400);
+  });
+};
+</script>
+
+</body>
+</html>

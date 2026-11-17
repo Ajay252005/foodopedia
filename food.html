@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Detailed food history, authentic ingredients, cultural significance, and preparation methods on Foodopedia.">
+  <title>Food Details | Foodopedia</title>
+  <script>
+    if (!sessionStorage.getItem('foodopedia_current_user')) {
+      window.location.href = 'auth.html';
+    }
+  </script>
+  <script type="module" src="js/auth.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .meta-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #f1f5f9;
+      color: var(--text-main);
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      margin-top: 60px;
+      color: var(--text-muted);
+      font-size: 14px;
+      border-top: 1px solid var(--border-light);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="main-nav">
+  <a href="index.html" class="logo" style="color: inherit; text-decoration: none;">FOODOPEDIA</a>
+
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="javascript:void(0)" id="download-data-btn" onclick="downloadUserData()" style="color:white; text-decoration:none; font-size:13px; font-weight:600; display:none; background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px;">Download Data</a>
+    <a href="javascript:void(0)" id="download-feedback-btn" onclick="downloadFeedbackData()" style="color:white; text-decoration:none; font-size:13px; font-weight:600; display:none; background:rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px;">Download Feedback</a>
+    <a href="account.html" class="account-circle" title="My Account">
+      <svg viewBox="0 0 24 24" width="22" height="22" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    </a>
+    <a href="like.html" class="like-icon" title="Favorites">
+      ❤️
+      <span id="like-count">0</span>
+    </a>
+  </div>
+</nav>
+
+<div style="max-width: 1280px; margin: 0 auto;">
+  <a href="javascript:history.back()" class="back-btn" id="backBtn">← Back</a>
+</div>
+
+<div id="food-detail"></div>
+
+<footer>
+  <p>© 2026 Foodopedia. Bringing culinary heritage to your fingertips.</p>
+</footer>
+
+<script src="js/data.js"></script>
+
+<script type="module">
+const params = new URLSearchParams(window.location.search);
+const foodId = parseInt(params.get("id"));
+const container = document.getElementById("food-detail");
+const backBtn = document.getElementById("backBtn");
+
+if(!foodId){
+  backBtn.style.display = "none";
+  container.innerHTML = "<p style='text-align:center; padding:40px; color:var(--text-muted);'>Please select a cuisine first. <a href='index.html' style='color:var(--primary); font-weight:700;'>Go Home</a></p>";
+} else {
+
+  let food = foods.find(f => f.id === foodId);
+
+  // Search variations if not top-level
+  if (!food) {
+    for (const item of foods) {
+      if (item.variations && item.variations.length > 0) {
+        const foundVar = item.variations.find(v => v.id === foodId);
+        if (foundVar) {
+          const vDesc = foundVar.description || {};
+          food = {
+            id: foundVar.id,
+            name: foundVar.name,
+            cuisine: item.cuisine,
+            origin: item.origin,
+            year: item.year,
+            type: item.type,
+            images: (foundVar.images && foundVar.images.length > 0) ? foundVar.images : item.images,
+            description: {
+              history: vDesc.history || (typeof vDesc === 'string' ? vDesc : "No history available."),
+              ingredients: vDesc.ingredients || "Refer to " + item.name + " for details.",
+              preparation: vDesc.preparation || "Refer to " + item.name + " for details.",
+              culture: vDesc.culture || item.description.culture,
+              variations: vDesc.variations || "Specialized variation of " + item.name + "."
+            }
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  if(!food){
+    backBtn.style.display = "none";
+    container.innerHTML = "<p style='text-align:center; padding:40px; color:var(--text-muted);'>Dish not found. <a href='index.html' style='color:var(--primary); font-weight:700;'>Go Home</a></p>";
+  } else {
+
+    let currentImg = 0;
+
+    container.innerHTML = `
+      <div class="food-detail">
+        <div class="carousel-container">
+          <button class="carousel-btn" id="prevBtn">&#8592;</button>
+          <img id="mainImage" src="${getImagePath(food.images)}" class="food-image" decoding="async" fetchpriority="high" onerror="this.src=window.getImagePath([])" alt="${food.name}">
+          <button class="carousel-btn" id="nextBtn">&#8594;</button>
+        </div>
+
+        <div class="food-info">
+          <h1 class="detail-title">
+            ${food.name}
+
+            <span id="detail-like-btn" class="detail-like-btn" title="Add to Favorites">
+              <svg viewBox="0 0 24 24" class="heart-icon">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+              </svg>
+            </span>
+          </h1>
+
+          <div style="margin-top: 15px;">
+            <span class="meta-tag">🌍 ${food.cuisine} Cuisine</span>
+            <span class="meta-tag">📍 ${food.origin}</span>
+            <span class="meta-tag">📅 ${food.year}</span>
+            <span class="meta-tag">${getTypeIcon(food.type)} ${food.type}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="food-description">
+        <h2>History & Origin</h2><p>${food.description.history}</p>
+        <h2>Key Ingredients</h2><p>${food.description.ingredients}</p>
+        <h2>Preparation Method</h2><p>${food.description.preparation}</p>
+        <h2>Cultural Importance</h2><p>${food.description.culture}</p>
+        <h2>Variations & Regional Styles</h2><p>${food.description.variations}</p>
+      </div>
+
+      ${food.variations && food.variations.length ? `
+      <div class="food-variations">
+        <h2 style="font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; margin-bottom:18px;">Famous Variations of ${food.name}</h2>
+        <div class="variation-list">
+          ${food.variations.map(v => `
+            <div class="variation-card" onclick="location.href='food.html?id=${v.id}'">
+              <img src="${getImagePath(v.images)}" loading="lazy" decoding="async" onerror="this.src=window.getImagePath([])" alt="${v.name}">
+              <p>${v.name}</p>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      ` : ""}
+    `;
+
+    const mainImage = document.getElementById("mainImage");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    if (!food.images || food.images.length <= 1) {
+      prevBtn.style.display = "none";
+      nextBtn.style.display = "none";
+    }
+
+    if (food.images && food.images.length > 0) {
+      prevBtn.onclick = () => {
+        currentImg = (currentImg - 1 + food.images.length) % food.images.length;
+        mainImage.src = getImagePath([food.images[currentImg]]);
+      };
+
+      nextBtn.onclick = () => {
+        currentImg = (currentImg + 1) % food.images.length;
+        mainImage.src = getImagePath([food.images[currentImg]]);
+      };
+    }
+
+    const detailLikeBtn = document.getElementById("detail-like-btn");
+    const heartIcon = detailLikeBtn.querySelector(".heart-icon");
+
+    function updateDetailLike(){
+      let likedItems = getLikedFoods();
+
+      if(likedItems.includes(food.id)){
+        heartIcon.classList.add("liked");
+      }else{
+        heartIcon.classList.remove("liked");
+      }
+    }
+
+    updateDetailLike();
+    detailLikeBtn.addEventListener("click", () => toggleLike(food.id, null, updateDetailLike));
+  }
+}
+</script>
+
+</body>
+</html>
