@@ -4,7 +4,7 @@ import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/10
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCgw9YETjcfNSz9xB0uSKwVQbgS54LAyhk",
+  apiKey: "Use your own key",
   authDomain: "foodopedia-9731e.firebaseapp.com",
   projectId: "foodopedia-9731e",
   storageBucket: "foodopedia-9731e.firebasestorage.app",
